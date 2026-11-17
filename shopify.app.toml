@@ -1,0 +1,41 @@
+# Organik Kal — Notify! Back in Stock & Preorder Custom App
+name = "Organik Kal Stok & Ön Sipariş"
+client_id = "REPLACE_WITH_SHOPIFY_CLIENT_ID"
+application_url = "https://notify.organikkal.com"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+
+[access_scopes]
+# Ürün/stok takibi, müşteri eşleştirme ve ön sipariş etiketleme izinleri
+scopes = "read_products,write_products,read_inventory,read_orders,write_orders,read_customers,write_customers"
+
+[auth]
+redirect_urls = [
+  "https://notify.organikkal.com/auth/callback",
+  "https://notify.organikkal.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "inventory_levels/update" ]
+  uri = "/webhooks/inventory_levels/update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "products/update" ]
+  uri = "/webhooks/products/update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/create" ]
+  uri = "/webhooks/orders/create"
+
+[app_proxy]
+url = "https://notify.organikkal.com/apps/ok-notify"
+subpath = "ok-notify"
+prefix = "apps"
+
+[pos]
+embedded = false

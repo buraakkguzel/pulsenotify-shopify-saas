@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: pulsenotify-shopify-saas
+    runtime: node
+    plan: free
+    buildCommand: npm test
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: SHOPIFY_SHOP_DOMAIN
+        value: organikkal.myshopify.com
+      - key: STOREFRONT_URL
+        value: https://organikkal.com
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: FROM_EMAIL
+        value: bilgi@organikkal.com
+      - key: FROM_NAME
+        value: Organik Kal

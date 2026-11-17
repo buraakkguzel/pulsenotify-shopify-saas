@@ -1,0 +1,16 @@
+{
+  "name": "pulsenotify-shopify-saas",
+  "version": "2.0.0",
+  "description": "PulseNotify — Multi-Brand Shopify Back in Stock (Email + WhatsApp + SMS) & Preorder SaaS Platform",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --no-warnings src/server.js",
+    "dev": "node --no-warnings --watch src/server.js",
+    "test": "node --no-warnings --test test/app.test.js",
+    "seed": "node --no-warnings src/seed.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

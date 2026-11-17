@@ -1,0 +1,42 @@
+{% comment %}
+  Organik Kal — Theme App Extension Block (Back in Stock & Preorder)
+  Shopify Tema Editörü -> Uygulama Blokları (App Embeds / Product Blocks) üzerinden de eklenebilir.
+{% endcomment %}
+{% if product != blank %}
+  {% render 'ok-restock-notify',
+    product: product,
+    selected_variant: product.selected_or_first_available_variant,
+    api_endpoint: block.settings.api_endpoint
+  %}
+{% endif %}
+
+{% schema %}
+{
+  "name": "OK • Stok Habercisi",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "api_endpoint",
+      "label": "Bildirim API Adresi",
+      "default": "/apps/ok-notify/subscribe",
+      "info": "Shopify App Proxy (/apps/ok-notify/subscribe) veya doğrudan sunucu URL'si."
+    },
+    {
+      "type": "text",
+      "id": "notify_button_label",
+      "label": "Stok Bildirim Buton Metni",
+      "default": "Gelince haber ver"
+    },
+    {
+      "type": "text",
+      "id": "preorder_button_label",
+      "label": "Ön Sipariş Buton Metni",
+      "default": "Ön sipariş ver"
+    }
+  ]
+}
+{% endschema %}

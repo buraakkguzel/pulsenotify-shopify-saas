@@ -1,0 +1,7 @@
+api_version = "2025-01"
+
+[[extensions]]
+name = "OK • Stok Bildirimi & Ön Sipariş"
+handle = "ok-notify-theme-extension"
+type = "theme"
+uid = "ok-notify-back-in-stock-preorder"
