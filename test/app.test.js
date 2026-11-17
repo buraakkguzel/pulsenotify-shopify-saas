@@ -46,6 +46,42 @@ function invokeHandler(requestHandler, { method = 'GET', url = '/', headers = {}
   });
 }
 
+test('Yönetim erişimi doğrulanır ve anahtarsız webhook reddedilir', async () => {
+  const { requestHandler, store } = createAppServer({
+    dbPath: ':memory:',
+    adminPassword: 'test-only-password',
+    webhookSecret: ''
+  });
+  try {
+    const authorization = 'Basic ' + Buffer.from('admin:test-only-password').toString('base64');
+    for (const url of ['/', '/admin', '/api/admin/subscriptions', '/api/admin/settings']) {
+      const denied = await invokeHandler(requestHandler, { url });
+      assert.equal(denied.status, 401);
+      assert.match(denied.headers['WWW-Authenticate'], /^Basic /);
+    }
+    const session = await invokeHandler(requestHandler, {
+      url: '/api/admin/dashboard',
+      headers: { authorization, 'sec-fetch-site': 'same-origin' }
+    });
+    assert.equal(session.status, 200);
+    const crossSite = await invokeHandler(requestHandler, {
+      method: 'POST',
+      url: '/api/admin/settings',
+      headers: { authorization, 'sec-fetch-site': 'cross-site' }
+    });
+    assert.equal(crossSite.status, 403);
+    const webhook = await invokeHandler(requestHandler, {
+      method: 'POST',
+      url: '/webhooks/inventory_levels/update',
+      body: { available: 1 }
+    });
+    assert.equal(webhook.status, 401);
+    assert.equal((await invokeHandler(requestHandler, { url: '/health' })).status, 200);
+  } finally {
+    store.db.close();
+  }
+});
+
 test('Türk ve uluslararası telefon numarası normalizasyonu ve WhatsApp linki', () => {
   assert.equal(normalizePhone('0532 123 45 67'), '+905321234567');
   assert.equal(normalizePhone('5321234567'), '+905321234567');

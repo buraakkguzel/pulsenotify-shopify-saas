@@ -1,6 +1,7 @@
 'use strict';
 
 const http = require('node:http');
+const { createHash, timingSafeEqual } = require('node:crypto');
 const { URL } = require('node:url');
 const { createDatabase, normalizeShopDomain } = require('./db');
 const {
@@ -50,7 +51,9 @@ function sendJson(res, statusCode, payload) {
 function createAppServer(options = {}) {
   const store = options.store || createDatabase(options.dbPath);
   const fetchImpl = options.fetchImpl || globalThis.fetch;
-  const webhookSecret = options.webhookSecret ?? process.env.SHOPIFY_API_SECRET ?? '';
+  const webhookSecret = options.webhookSecret ?? (process.env.SHOPIFY_WEBHOOK_SECRET || process.env.SHOPIFY_API_SECRET || '');
+  const adminPassword = options.adminPassword ?? process.env.PULSENOTIFY_ADMIN_PASSWORD ?? '';
+  const adminDigest = createHash('sha256').update(`admin:${adminPassword}`).digest();
 
   const requestHandler = async (req, res) => {
     try {
@@ -67,6 +70,28 @@ function createAppServer(options = {}) {
       const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
       const pathname = url.pathname;
       const queryShop = url.searchParams.get('shop') || req.headers['x-shopify-shop-domain'] || '';
+
+      if (pathname === '/' || /^\/(?:admin|api\/admin)(?:\/|$)/.test(pathname)) {
+        if (!adminPassword && (process.env.NODE_ENV === 'production' || process.env.RENDER === 'true')) {
+          sendJson(res, 503, { ok: false, error: 'Yönetim paneli henüz yapılandırılmadı.' });
+          return;
+        }
+        if (adminPassword) {
+          const match = (req.headers.authorization || '').match(/^Basic ([A-Za-z0-9+/=]+)$/i);
+          const supplied = createHash('sha256').update(Buffer.from(match?.[1] || '', 'base64')).digest();
+          if (!timingSafeEqual(supplied, adminDigest)) {
+            res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="PulseNotify"', 'Cache-Control': 'no-store' });
+            res.end();
+            return;
+          }
+          if (req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(req.headers['sec-fetch-site'])) {
+            res.writeHead(403);
+            res.end();
+            return;
+          }
+          res.setHeader?.('Cache-Control', 'no-store');
+        }
+      }
 
       // Health check
       if (req.method === 'GET' && pathname === '/health') {
@@ -162,7 +187,7 @@ function createAppServer(options = {}) {
         const raw = await readRawBody(req);
         const hmac = req.headers['x-shopify-hmac-sha256'] || '';
         const webhookShop = req.headers['x-shopify-shop-domain'] || queryShop || null;
-        if (!verifyShopifyWebhookHmac(raw, hmac, webhookSecret)) {
+        if (!webhookSecret || !verifyShopifyWebhookHmac(raw, hmac, webhookSecret)) {
           sendJson(res, 401, { ok: false, error: 'Invalid webhook HMAC signature' });
           return;
         }
